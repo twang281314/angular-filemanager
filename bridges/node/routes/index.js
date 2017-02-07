@@ -181,8 +181,8 @@ routes.post('/remove', upload.any(), function (req, res, next) {
 
 routes.post('/createFolder', upload.any(), function (req, res, next) {
 
-  var folderPath = path.join(pathResolver.baseDir(req), pathResolver.pathGuard(req.body.path, req.body.name));
-  //console.log(folderPath);
+  var folderPath = path.join(pathResolver.baseDir(req), pathResolver.pathGuard(req.body.newPath, req.body.name));
+  console.log(folderPath);
   var promise = fs.mkdirAsync(folderPath, 0o777);
 
   promise = promise.then(function() {
