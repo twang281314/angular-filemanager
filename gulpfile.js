@@ -2,6 +2,8 @@
 
 // Require
 var gulp = require('gulp');
+var connect = require('gulp-connect'); //web服务
+var modRewrite = require('connect-modrewrite'); //api路由转发 处理跨域问题
 var templateCache = require('gulp-angular-templatecache');
 var uglify = require('gulp-uglify');
 var minifyCss = require('gulp-clean-css');
@@ -9,6 +11,7 @@ var concat = require('gulp-concat');
 var eslint = require('gulp-eslint');
 var del = require('del');
 var path = require('path');
+
 
 // Vars
 var src = 'src/';
@@ -25,16 +28,16 @@ gulp.task('cache-templates', function () {
   return gulp.src(tplPath + '/*.html')
     .pipe(templateCache(jsFile, {
       module: 'FileManagerApp',
-      base: function(file) {
+      base: function (file) {
         return tplPath + '/' + path.basename(file.history[0]);
       }
     }))
     .pipe(gulp.dest(dst));
 });
 
-gulp.task('concat-uglify-js', ['cache-templates'], function() {
+gulp.task('concat-uglify-js', ['cache-templates'], function () {
   return gulp.src([
-    src + 'js/app.js',
+      src + 'js/app.js',
       src + 'js/*/*.js',
       dst + '/' + jsFile
     ])
@@ -43,9 +46,11 @@ gulp.task('concat-uglify-js', ['cache-templates'], function() {
     .pipe(gulp.dest(dst));
 });
 
-gulp.task('minify-css', function() {
+gulp.task('minify-css', function () {
   return gulp.src(src + 'css/*.css')
-    .pipe(minifyCss({compatibility: 'ie8'}))
+    .pipe(minifyCss({
+      compatibility: 'ie8'
+    }))
     .pipe(concat(cssFile))
     .pipe(gulp.dest(dst));
 });
@@ -54,21 +59,34 @@ gulp.task('lint', function () {
   return gulp.src([src + 'js/app.js', src + 'js/*/*.js'])
     .pipe(eslint({
       'rules': {
-          'quotes': [2, 'single'], 
-          //'linebreak-style': [2, 'unix'],
-          'semi': [2, 'always']
+        'quotes': [2, 'single'],
+        //'linebreak-style': [2, 'unix'],
+        'semi': [2, 'always']
       },
       'env': {
-          'browser': true
+        'browser': true
       },
       'globals': {
-          'angular': true,
-          'jQuery': true
+        'angular': true,
+        'jQuery': true
       },
       'extends': 'eslint:recommended'
     }))
     .pipe(eslint.format())
     .pipe(eslint.failOnError());
+});
+
+gulp.task('webserver', function () {
+  connect.server({
+    root: '.',
+    livereload: false,
+    port: 8088,
+    middleware: function (connect, opt) {
+      return [modRewrite([
+        '^/api/(.*)$ http://localhost:5000/$1 [P]',
+      ])];
+    }
+  });
 });
 
 gulp.task('default', ['concat-uglify-js', 'minify-css']);
